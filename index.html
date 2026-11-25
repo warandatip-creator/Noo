@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>บะหมี่อร่อย – บะหมี่กึ่งสำเร็จรูปรสเด็ด</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,"Noto Sans Thai",sans-serif;color:#222;background:#fffaf0}
+header{background:#d9480f;color:#fff;text-align:center;padding:56px 16px}header h1{margin:0 0 8px;font-size:2.2rem}
+.wrap{max-width:900px;margin:auto;padding:24px 16px}.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:#fff;border-radius:12px;box-shadow:0 2px 8px #0002;overflow:hidden}.card img{width:100%;display:block}.card div{padding:12px}
+input,textarea,button{font:inherit;padding:10px;width:100%;margin:4px 0;border:1px solid #bbb;border-radius:8px}
+.qty{width:80px}button{background:#d9480f;color:#fff;border:0;cursor:pointer;font-weight:bold}
+#msg{margin-top:12px;font-weight:bold}footer{text-align:center;padding:24px;color:#777}
+</style></head><body>
+<header><h1>🍜 บะหมี่อร่อย</h1><p>เส้นเหนียวนุ่ม น้ำซุปเข้มข้น ส่งตรงถึงบ้านคุณ</p></header>
+<div class="wrap">
+<h2>เลือกรสที่ชอบ</h2><div class="grid" id="products"></div>
+<h2>กรอกข้อมูลจัดส่ง</h2>
+<form id="f"><input name="name" placeholder="ชื่อ-นามสกุล" required>
+<input name="phone" placeholder="เบอร์โทร" pattern="[0-9]{9,10}" required>
+<textarea name="address" placeholder="ที่อยู่จัดส่ง" rows="3" required></textarea>
+<input name="zip" placeholder="รหัสไปรษณีย์" pattern="[0-9]{5}" required>
+<p>ยอดรวม: <b id="total">0</b> บาท</p><button>สั่งซื้อ</button><div id="msg"></div></form></div>
+<footer>© บะหมี่อร่อย | โปรเจกต์นักศึกษา</footer>
+<script src="config.js"></script>
+<script>
+const box=document.getElementById("products");
+PRODUCTS.forEach(p=>box.insertAdjacentHTML("beforeend",`<div class="card"><img src="${p.img}" alt="${p.name}"><div><b>${p.name}</b><p>${p.price} บาท</p>จำนวน <input class="qty" type="number" min="0" value="0" data-sku="${p.sku}"></div></div>`));
+const qs=()=>[...document.querySelectorAll(".qty")];
+function calc(){document.getElementById("total").textContent=qs().reduce((s,i)=>s+i.value*PRODUCTS.find(p=>p.sku==i.dataset.sku).price,0)}
+qs().forEach(i=>i.oninput=calc);
+document.getElementById("f").onsubmit=async e=>{
+ e.preventDefault();const m=document.getElementById("msg");
+ const d=Object.fromEntries(new FormData(e.target));d.items={};qs().forEach(i=>d.items[i.dataset.sku]=+i.value);
+ if(!Object.values(d.items).some(v=>v>0)){m.textContent="กรุณาเลือกสินค้าอย่างน้อย 1 ชิ้น";return}
+ d.total=+document.getElementById("total").textContent;m.textContent="กำลังส่งคำสั่งซื้อ...";
+ try{await fetch(API_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain"},body:JSON.stringify(d)});
+ m.textContent="✅ สั่งซื้อสำเร็จ ขอบคุณค่ะ";e.target.reset();calc()}catch(err){m.textContent="❌ เกิดข้อผิดพลาด ลองใหม่อีกครั้ง"}};
+</script></body></html>

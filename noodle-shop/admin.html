@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>หลังบ้าน – หยิบ/แพ็ค/จ่าหน้า</title>
+<style>
+body{font-family:system-ui,"Noto Sans Thai",sans-serif;margin:16px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:6px;text-align:left}
+button{padding:8px 14px;margin:4px 0}.label{border:2px solid #000;padding:12px;margin:12px 0;width:380px;page-break-inside:avoid}
+#labels{display:flex;flex-wrap:wrap;gap:8px}@media print{.noprint{display:none}body{margin:0}}
+</style></head><body>
+<div class="noprint"><h1>หลังบ้านจัดส่ง</h1><button onclick="load()">โหลดออเดอร์</button> <button onclick="window.print()">🖨 พิมพ์ใบจ่าหน้า</button>
+<h2>1) ใบหยิบสินค้า (Pick List รวมทุกออเดอร์ที่ยังไม่แพ็ค)</h2><div id="pick"></div>
+<h2>2) รายการออเดอร์ (แพ็คตามออเดอร์)</h2><div id="orders"></div><h2>3) ใบจ่าหน้าพัสดุ</h2></div>
+<div id="labels"></div>
+<script src="config.js"></script>
+<script>
+async function load(){
+ const r=await (await fetch(`${API_URL}?key=${ADMIN_KEY}`)).json();
+ if(r.error){alert(r.error);return}
+ const open=r.filter(o=>o.Status!="PACKED");
+ const sum={};PRODUCTS.forEach(p=>sum[p.sku]=0);
+ open.forEach(o=>PRODUCTS.forEach(p=>sum[p.sku]+=+o["qty_"+p.sku]||0));
+ pick.innerHTML="<table><tr><th>SKU</th><th>สินค้า</th><th>จำนวนที่ต้องหยิบ</th></tr>"+PRODUCTS.map(p=>`<tr><td>${p.sku}</td><td>${p.name}</td><td><b>${sum[p.sku]}</b></td></tr>`).join("")+"</table>";
+ orders.innerHTML="<table><tr><th>Order</th><th>ลูกค้า</th><th>รายการแพ็ค</th><th>สถานะ</th><th></th></tr>"+r.map(o=>`<tr><td>${o.OrderID}</td><td>${o.Name}</td><td>${PRODUCTS.filter(p=>+o["qty_"+p.sku]>0).map(p=>p.sku+" x"+o["qty_"+p.sku]).join(", ")}</td><td>${o.Status}</td><td>${o.Status!="PACKED"?`<button onclick="pack('${o.OrderID}')">แพ็คแล้ว</button>`:"✔"}</td></tr>`).join("")+"</table>";
+ labels.innerHTML=open.map(o=>`<div class="label"><b>จาก:</b> ${SENDER.name} โทร ${SENDER.phone}<br>${SENDER.address}<hr><b>ถึง:</b> ${o.Name} โทร ${o.Phone}<br>${o.Address} <b>${o.Zip}</b><hr>${PRODUCTS.filter(p=>+o["qty_"+p.sku]>0).map(p=>`${p.sku} x${o["qty_"+p.sku]}`).join(" | ")}<br>Order: ${o.OrderID} | ยอด ${o.Total} บาท</div>`).join("");
+}
+async function pack(id){await fetch(`${API_URL}?key=${ADMIN_KEY}&pack=${id}`);load()}
+</script></body></html>
